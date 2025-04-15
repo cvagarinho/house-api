@@ -1,30 +1,41 @@
-version: '3'
-
 services:
   api:
     build: .
+    container_name: house_api
+    env_file:
+      - .env.local
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8000:8000"
-    depends_on:
-      - db
-    env_file:
-      - .env
-    volumes:
-      - ./app:/app/app
-    restart: on-failure
+    networks:
+      - house-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   db:
-    image: postgres:14
+    image: postgres:15-alpine
+    container_name: house_db
     env_file:
-      - .env
-    environment:
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
+      - .env.local
+    ports:
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    networks:
+      - house-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+networks:
+  house-network:
+    driver: bridge
 
 volumes:
   postgres_data:

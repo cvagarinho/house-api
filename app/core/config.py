@@ -1,8 +1,14 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    app_name: str = "House MD API"
-    database_url: str
+    postgres_db: str
+    postgres_user: str
+    postgres_password: str
+    postgres_host: str
+    postgres_port: int
+
+    class Config:
+        env_file = ".env.local"
 
     class Config:
         env_file = ".env.local"
