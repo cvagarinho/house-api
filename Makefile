@@ -1,4 +1,4 @@
-.PHONY: dev install test up down logs rebuild status check-api restart-api requirements clean rebuild-clean
+.PHONY: dev install test up down logs rebuild status check-api restart-api requirements clean rebuild-clean rabbitmq-ui worker-logs worker-restart
 
 install:
 	pip install -r requirements.txt
@@ -39,4 +39,13 @@ clean:
 rebuild-clean:
 	$(MAKE) down
 	$(MAKE) clean
+
+rabbitmq-ui:
+	@echo "RabbitMQ UI available at http://localhost:15672"
+
+worker-logs:
+	docker logs house_worker -f
+
+worker-restart:
+	docker-compose restart worker
 

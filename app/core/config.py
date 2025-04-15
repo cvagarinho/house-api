@@ -7,8 +7,11 @@ class Settings(BaseSettings):
     postgres_host: str
     postgres_port: int
 
-    class Config:
-        env_file = ".env.local"
+    rabbitmq_user: str
+    rabbitmq_password: str
+    rabbitmq_host: str
+    rabbitmq_port: int
+    rabbitmq_queue: str
 
     class Config:
         env_file = ".env.local"
