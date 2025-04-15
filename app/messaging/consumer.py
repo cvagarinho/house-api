@@ -30,21 +30,16 @@ class RecommendationConsumer:
         try:
             message = json.loads(body)
             
-            # Log the recommendation
             logger.info(f"Received recommendation: {message}")
             
-            # Simulate email notification
             self._send_notification(message)
             
-            # Store for analytics
             self._store_analytics(message)
             
-            # Acknowledge the message
             ch.basic_ack(delivery_tag=method.delivery_tag)
             
         except Exception as e:
             logger.error(f"Error processing message: {e}")
-            # Reject the message and requeue
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
     def _send_notification(self, message):

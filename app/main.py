@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from app.api.routes import api_router
-from app.db.init_db import init_db
+from app.cache.redis_manager import redis_manager
 
 app = FastAPI(
     title="HOUSE AI",
@@ -9,13 +9,15 @@ app = FastAPI(
     openapi_url="/house-api/openapi.json",
 )
 
-# Register API routes
 app.include_router(api_router, prefix="/api")
 
-# Initialize database on startup
 @app.on_event("startup")
 async def startup_event():
-    init_db()
+    await redis_manager.connect()
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    await redis_manager.close()
 
 @app.get("/")
 async def root():

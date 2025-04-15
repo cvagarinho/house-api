@@ -1,18 +1,22 @@
 import pika
 import json
 from app.schemas.recommendation import Recommendation
+from app.core.config import settings
 
 class RecommendationPublisher:
     def __init__(self):
         self.connection = pika.BlockingConnection(
             pika.ConnectionParameters(
-                host='rabbitmq',  # service name from docker-compose
-                port=5672,
-                credentials=pika.PlainCredentials('guest', 'guest')
+                host=settings.rabbitmq_host,
+                port=settings.rabbitmq_port,
+                credentials=pika.PlainCredentials(
+                    settings.rabbitmq_user,
+                    settings.rabbitmq_password
+                )
             )
         )
         self.channel = self.connection.channel()
-        self.channel.queue_declare(queue='recommendations')
+        self.channel.queue_declare(queue=settings.rabbitmq_queue)
 
     def publish_recommendation(self, recommendation: Recommendation):
         message = {
@@ -23,7 +27,7 @@ class RecommendationPublisher:
         
         self.channel.basic_publish(
             exchange='',
-            routing_key='recommendations',
+            routing_key=settings.rabbitmq_queue,
             body=json.dumps(message)
         )
 
