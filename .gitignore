@@ -129,6 +129,9 @@ celerybeat.pid
 
 # Environments
 .env
+.env.local
+.env.*.local
+*.env
 .venv
 env/
 venv/
@@ -172,3 +175,49 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# IDE settings
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Personal settings and configurations
+*.private
+*_local.*
+config.local.yaml
+settings.local.json
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs and temporary files
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Coverage and test reports
+coverage/
+.coverage
+htmlcov/
+test-results/
+jest-results/
+
+# Cache directories
+.cache/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+
+# Docker volumes and containers
+docker-volumes/
+.docker/
+
+# Local development files
+local/
+dev/
+*.local

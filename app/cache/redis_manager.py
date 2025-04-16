@@ -1,8 +1,11 @@
-from redis import asyncio as aioredis
 import json
 from typing import Optional
-from app.core.config import settings
+
 from pydantic import BaseModel
+from redis import asyncio as aioredis
+
+from app.core.config import settings
+
 
 class RedisManager:
     def __init__(self):
@@ -15,7 +18,7 @@ class RedisManager:
                 port=settings.redis_port,
                 db=settings.redis_db,
                 encoding="utf-8",
-                decode_responses=True
+                decode_responses=True,
             )
 
     async def get(self, key: str) -> Optional[dict]:
@@ -28,13 +31,12 @@ class RedisManager:
         if not self.redis:
             await self.connect()
         await self.redis.set(
-            key,
-            value.model_dump_json(),
-            ex=ttl or settings.redis_cache_ttl
+            key, value.model_dump_json(), ex=ttl or settings.redis_cache_ttl
         )
 
     async def close(self):
         if self.redis:
             await self.redis.close()
+
 
 redis_manager = RedisManager()

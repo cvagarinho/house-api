@@ -1,8 +1,10 @@
-from app.messaging.consumer import RecommendationConsumer
-import sys
 import logging
+import sys
+
+from app.messaging.consumer import RecommendationConsumer
 
 logger = logging.getLogger(__name__)
+
 
 def main():
     try:
@@ -15,6 +17,7 @@ def main():
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

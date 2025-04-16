@@ -1,7 +1,9 @@
 from datetime import timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.auth.jwt import create_access_token
 from app.core.auth.password import verify_password
 from app.core.config import settings
@@ -11,6 +13,7 @@ from app.services.user import UserService
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
 
 @router.post(
     "/token",
@@ -23,10 +26,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
                 "application/json": {
                     "example": {
                         "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-                        "token_type": "bearer"
+                        "token_type": "bearer",
                     }
                 }
-            }
+            },
         },
         401: {
             "description": "Invalid credentials",
@@ -34,15 +37,15 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
                 "application/json": {
                     "example": {"detail": "Incorrect email or password"}
                 }
-            }
-        }
+            },
+        },
     },
     summary="Create access token",
-    description="OAuth2 compatible token login, get an access token for future requests"
+    description="OAuth2 compatible token login, get an access token for future requests",
 )
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: AsyncSession = Depends(get_async_session)
+    db: AsyncSession = Depends(get_async_session),
 ):
     user_service = UserService(db)
     user = await user_service.get_by_email(form_data.username)
@@ -52,13 +55,13 @@ async def login(
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
     access_token = create_access_token(
-        data={"sub": user.email},
-        expires_delta=access_token_expires
+        data={"sub": user.email}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
+
 
 @router.post(
     "/register",
@@ -72,19 +75,17 @@ async def login(
                     "example": {
                         "id": "123e4567-e89b-12d3-a456-426614174000",
                         "email": "user@example.com",
-                        "is_active": True
+                        "is_active": True,
                     }
                 }
-            }
+            },
         },
         400: {
             "description": "Email already registered",
             "content": {
-                "application/json": {
-                    "example": {"detail": "Email already registered"}
-                }
-            }
-        }
+                "application/json": {"example": {"detail": "Email already registered"}}
+            },
+        },
     },
     summary="Register new user",
     description="""
@@ -92,16 +93,14 @@ async def login(
     
     The password must be at least 8 characters long.
     Email must be a valid email address.
-    """
+    """,
 )
 async def register(
-    user_data: UserCreate,
-    db: AsyncSession = Depends(get_async_session)
+    user_data: UserCreate, db: AsyncSession = Depends(get_async_session)
 ):
     user_service = UserService(db)
     if await user_service.get_by_email(user_data.email):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
         )
     return await user_service.create(user_data)

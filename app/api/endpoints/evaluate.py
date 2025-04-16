@@ -1,10 +1,12 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.services.recommendation import RecommendationService
+
 from app.db.session import get_async_session
 from app.schemas.recommendation import PatientData, Recommendation
+from app.services.recommendation import RecommendationService
 
 router = APIRouter()
+
 
 @router.post(
     "/",
@@ -18,10 +20,10 @@ router = APIRouter()
                     "example": {
                         "id": "123e4567-e89b-12d3-a456-426614174000",
                         "timestamp": "2025-04-17T10:00:00Z",
-                        "recommendation_text": "Physical Therapy, Weight Management Program"
+                        "recommendation_text": "Physical Therapy, Weight Management Program",
                     }
                 }
-            }
+            },
         },
         422: {
             "description": "Validation Error",
@@ -32,13 +34,13 @@ router = APIRouter()
                             {
                                 "loc": ["body", "age"],
                                 "msg": "field required",
-                                "type": "value_error.missing"
+                                "type": "value_error.missing",
                             }
                         ]
                     }
                 }
-            }
-        }
+            },
+        },
     },
     summary="Evaluate patient data",
     description="""
@@ -48,11 +50,10 @@ router = APIRouter()
     - Stored in the database
     - Published to RabbitMQ for processing
     - Cached in Redis for future retrievals
-    """
+    """,
 )
 async def evaluate_patient(
-    patient_data: PatientData,
-    db: AsyncSession = Depends(get_async_session)
+    patient_data: PatientData, db: AsyncSession = Depends(get_async_session)
 ) -> Recommendation:
     service = RecommendationService(db)
     return await service.generate(patient_data)

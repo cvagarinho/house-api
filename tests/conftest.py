@@ -1,20 +1,24 @@
 import uuid
-import pytest
 from unittest.mock import AsyncMock
-from httpx import AsyncClient, ASGITransport
+
+import pytest
 from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+
+from app.cache.redis_manager import redis_manager
 from app.db.base import Base
 from app.db.session import get_async_session
 from app.main import app
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from app.models.user import User
-from app.cache.redis_manager import redis_manager
 
 DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+
 
 @pytest.fixture(scope="session")
 def anyio_backend():
     return "asyncio"
+
 
 @pytest.fixture(scope="session")
 async def test_db_engine():
@@ -24,54 +28,49 @@ async def test_db_engine():
     yield engine
     await engine.dispose()
 
+
 @pytest.fixture
 async def db_session(test_db_engine):
     async_session = async_sessionmaker(test_db_engine, expire_on_commit=False)
     async with async_session() as session:
         yield session
 
+
 @pytest.fixture
 async def async_client(db_session):
     """Async client fixture with overridden dependencies"""
     app.dependency_overrides[get_async_session] = lambda: db_session
-    
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
         yield ac
-    
+
     app.dependency_overrides.clear()
+
 
 @pytest.fixture
 async def auth_token(async_client) -> str:
     """Create a test user and return its token"""
-    # Register user
     await async_client.post(
         "/api/auth/register",
-        json={
-            "email": "test@example.com",
-            "password": "password123"
-        }
+        json={"email": "test@example.com", "password": "password123"},
     )
-    
-    # Get token
+
     response = await async_client.post(
         "/api/auth/token",
-        data={
-            "username": "test@example.com",
-            "password": "password123"
-        }
+        data={"username": "test@example.com", "password": "password123"},
     )
     return response.json()["access_token"]
+
 
 @pytest.fixture
 async def mock_redis(mocker):
     """Mock Redis with fresh mock objects for each test"""
     redis_get = AsyncMock(return_value=None)
     redis_set = AsyncMock()
-    
-    mocker.patch('app.cache.redis_manager.redis_manager.get', redis_get)
-    mocker.patch('app.cache.redis_manager.redis_manager.set', redis_set)
-    
-    return {
-        'get': redis_get,
-        'set': redis_set
-    }
+
+    mocker.patch("app.cache.redis_manager.redis_manager.get", redis_get)
+    mocker.patch("app.cache.redis_manager.redis_manager.set", redis_set)
+
+    return {"get": redis_get, "set": redis_set}

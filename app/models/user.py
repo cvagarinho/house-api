@@ -1,6 +1,9 @@
 import uuid
-from sqlalchemy import Column, String, Boolean
+
+from sqlalchemy import Boolean, Column, String
+
 from app.db.base import Base
+
 
 class User(Base):
     __tablename__ = "users"

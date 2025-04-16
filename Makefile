@@ -1,4 +1,4 @@
-.PHONY: install test up down logs build status check-api requirements clean rebuild-clean rabbitmq-ui worker-logs worker-restart
+.PHONY: install test up down logs build status check-api requirements clean rebuild-clean rabbitmq-ui worker-logs worker-restart format lint
 
 install:
 	pip install -r requirements.txt
@@ -44,4 +44,13 @@ worker-logs:
 
 worker-restart:
 	docker-compose restart worker
+
+format:
+	isort .
+	black .
+
+lint:
+	flake8 .
+	black . --check
+	isort . --check-only
 

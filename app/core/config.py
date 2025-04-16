@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 
+
 class Settings(BaseSettings):
     postgres_db: str
     postgres_user: str
@@ -24,5 +25,6 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env.local"
+
 
 settings = Settings()

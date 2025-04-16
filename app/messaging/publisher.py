@@ -1,7 +1,10 @@
-import aio_pika
 import json
-from app.schemas.recommendation import Recommendation
+
+import aio_pika
+
 from app.core.config import settings
+from app.schemas.recommendation import Recommendation
+
 
 class RecommendationPublisher:
     def __init__(self):
@@ -15,7 +18,7 @@ class RecommendationPublisher:
                 host=settings.rabbitmq_host,
                 port=settings.rabbitmq_port,
                 login=settings.rabbitmq_user,
-                password=settings.rabbitmq_password
+                password=settings.rabbitmq_password,
             )
             self.channel = await self.connection.channel()
             await self.channel.declare_queue(self.queue_name, durable=True)
@@ -25,9 +28,9 @@ class RecommendationPublisher:
         message = {
             "recommendation_id": recommendation.id,
             "recommendation": recommendation.recommendation_text,
-            "timestamp": recommendation.timestamp.isoformat()
+            "timestamp": recommendation.timestamp.isoformat(),
         }
         await self.channel.default_exchange.publish(
             aio_pika.Message(body=json.dumps(message).encode()),
-            routing_key=self.queue_name
+            routing_key=self.queue_name,
         )

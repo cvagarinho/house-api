@@ -1,10 +1,13 @@
 from datetime import datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.services.base import BaseService
-from app.schemas.recommendation import PatientData, Recommendation
-from app.models.recommendation import RecommendationModel
-from app.messaging.publisher import RecommendationPublisher
+
 from app.cache.redis_manager import redis_manager
+from app.messaging.publisher import RecommendationPublisher
+from app.models.recommendation import RecommendationModel
+from app.schemas.recommendation import PatientData, Recommendation
+from app.services.base import BaseService
+
 
 class RecommendationService(BaseService):
     def __init__(self, db: AsyncSession):
@@ -16,8 +19,8 @@ class RecommendationService(BaseService):
         db_recommendation = await self._save_recommendation(recommendations)
         recommendation = Recommendation(
             id=str(db_recommendation.id),
-            timestamp=db_recommendation.timestamp, 
-            recommendation_text=db_recommendation.recommendation_text
+            timestamp=db_recommendation.timestamp.isoformat(),
+            recommendation_text=db_recommendation.recommendation_text,
         )
         await self._publish_recommendation(recommendation)
         return recommendation
@@ -34,15 +37,13 @@ class RecommendationService(BaseService):
         recommendation = Recommendation(
             id=str(result.id),
             timestamp=result.timestamp.isoformat(),
-            recommendation_text=result.recommendation_text
+            recommendation_text=result.recommendation_text,
         )
-        
-        # Store in cache
+
         await redis_manager.set(
-            f"recommendation:{recommendation_id}",
-            recommendation.model_dump()
+            f"recommendation:{recommendation_id}", recommendation.model_dump()
         )
-        
+
         return recommendation
 
     def _apply_rules(self, patient_data: PatientData) -> list[str]:
@@ -55,10 +56,11 @@ class RecommendationService(BaseService):
             recommendations.append("Post-Surgery Recovery Plan")
         return recommendations
 
-    async def _save_recommendation(self, recommendations: list[str]) -> RecommendationModel:
+    async def _save_recommendation(
+        self, recommendations: list[str]
+    ) -> RecommendationModel:
         db_recommendation = RecommendationModel(
-            timestamp=datetime.now(),
-            recommendation_text=", ".join(recommendations) 
+            timestamp=datetime.now(), recommendation_text=", ".join(recommendations)
         )
         self._db.add(db_recommendation)
         await self._db.commit()
