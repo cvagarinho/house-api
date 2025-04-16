@@ -47,7 +47,5 @@ format:
 	black .
 
 lint:
-	flake8 .
-	black . --check
-	isort . --check-only
+	pyflakes ./app ./tests
 

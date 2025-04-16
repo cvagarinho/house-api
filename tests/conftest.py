@@ -1,16 +1,12 @@
-import uuid
 from unittest.mock import AsyncMock
 
 import pytest
-from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.cache.redis_manager import redis_manager
 from app.db.base import Base
 from app.db.session import get_async_session
 from app.main import app
-from app.models.user import User
 
 DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 

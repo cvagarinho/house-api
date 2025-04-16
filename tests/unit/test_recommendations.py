@@ -44,7 +44,7 @@ async def test_get_recommendation_not_found(async_client, auth_token, mock_redis
 
     headers = {"Authorization": f"Bearer {auth_token}"}
     response = await async_client.get(
-        f"/api/recommendations/nonexistent-id", headers=headers
+        "/api/recommendations/nonexistent-id", headers=headers
     )
 
     assert response.status_code == status.HTTP_404_NOT_FOUND

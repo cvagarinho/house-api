@@ -1,10 +1,5 @@
-import uuid
-from datetime import datetime
-
 import pytest
 from fastapi import status
-
-from app.schemas.recommendation import Recommendation
 
 
 @pytest.mark.asyncio

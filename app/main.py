@@ -46,4 +46,4 @@ async def shutdown_event():
 
 @app.get("/")
 async def root():
-    return {"message": f"Welcome to House API. See /docs for API documentation."}
+    return {"message": "Welcome to House API. See /docs for API documentation."}
