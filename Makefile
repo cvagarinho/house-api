@@ -15,7 +15,7 @@ logs:
 test:
 	docker-compose exec api pytest -v tests/
 
-rebuild:
+build:
 	docker-compose --env-file .env.local up -d --build
 
 status:
