@@ -1,5 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncEngine
-from app.models.recommendation import Base
+from app.db.base_class import Base
 from app.db.session import engine
 
 async def init_db():

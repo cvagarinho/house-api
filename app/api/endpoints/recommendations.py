@@ -4,12 +4,15 @@ from app.schemas.recommendation import Recommendation
 from app.cache.redis_manager import redis_manager
 from app.db.session import get_async_session
 from app.services.recommendation import get_recommendation_by_id
+from app.core.auth.jwt import get_current_user
+from app.schemas.user import User
 
 router = APIRouter()
 
 @router.get("/{recommendation_id}", response_model=Recommendation)
 async def get_recommendation(
     recommendation_id: str,
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_session)
 ) -> Recommendation:
     
