@@ -55,10 +55,3 @@ async def evaluate_patient(
     db: AsyncSession = Depends(get_async_session)
 ) -> Recommendation:
     return await generate_recommendation(db, patient_data)
-
-example_patient_data = {
-    "age": 70,
-    "bmi": 32.5,
-    "has_chronic_pain": True,
-    "recent_surgery": False
-}

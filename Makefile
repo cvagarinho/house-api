@@ -1,4 +1,4 @@
-.PHONY: dev install test up down logs rebuild status check-api restart-api requirements clean rebuild-clean rabbitmq-ui worker-logs worker-restart
+.PHONY: install test up down logs build status check-api requirements clean rebuild-clean rabbitmq-ui worker-logs worker-restart
 
 install:
 	pip install -r requirements.txt
@@ -13,7 +13,7 @@ logs:
 	docker-compose logs -f
 
 test:
-	docker-compose exec api pytest -v tests/
+	pytest tests -v
 
 build:
 	docker-compose --env-file .env.local up -d --build

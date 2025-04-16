@@ -9,6 +9,7 @@ async def generate_recommendation(db: AsyncSession, patient_data: PatientData) -
     Generate clinical recommendations based on multiple rules.
     """
     recommendations = []
+
     
     if patient_data.age > 65 and patient_data.has_chronic_pain:
         recommendations.append("Physical Therapy.")

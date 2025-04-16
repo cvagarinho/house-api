@@ -1,17 +1,20 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 class UserBase(BaseModel):
     email: EmailStr
 
-class UserCreate(UserBase):
-    password: str
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str = Field(
+        ...,
+        min_length=8,
+        description="Password must be at least 8 characters long"
+    )
 
-class User(UserBase):
+class User(BaseModel):
     id: str
-    is_active: bool
-
-    class Config:
-        from_attributes = True
+    email: str
+    is_active: bool = True
 
 class Token(BaseModel):
     access_token: str
