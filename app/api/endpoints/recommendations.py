@@ -17,15 +17,18 @@ async def get_recommendation(
     cached_data = await redis_manager.get(cache_key)
     
     if cached_data:
-        return Recommendation(**cached_data)
+        return cached_data
     
     recommendation = await get_recommendation_by_id(db, recommendation_id)
     if not recommendation:
         raise HTTPException(status_code=404, detail="Recommendation not found")
     
-    await redis_manager.set(
-        cache_key,
-        recommendation.dict()
+    recommendation_data = Recommendation(
+        id=recommendation.id,
+        timestamp=recommendation.timestamp,
+        recommendation_text=recommendation.recommendation_text
     )
     
-    return recommendation
+    await redis_manager.set(cache_key, recommendation_data)
+    
+    return recommendation_data

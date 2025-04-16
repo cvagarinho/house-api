@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from app.db.session import get_db
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.db.session import get_async_session
 from app.schemas.recommendation import PatientData, Recommendation
 from app.services.recommendation import generate_recommendation
 
 router = APIRouter()
 
 @router.post("/", response_model=Recommendation)
-def evaluate_patient(
+async def evaluate_patient(
     patient_data: PatientData,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_async_session)
 ) -> Recommendation:
-    return generate_recommendation(db, patient_data)
+    return await generate_recommendation(db, patient_data)

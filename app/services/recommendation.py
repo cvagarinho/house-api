@@ -1,9 +1,10 @@
 from app.schemas.recommendation import PatientData, Recommendation
 from app.models.recommendation import RecommendationModel
 from app.messaging.publisher import RecommendationPublisher
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
-def generate_recommendation(db: Session, patient_data: PatientData) -> Recommendation:
+async def generate_recommendation(db: AsyncSession, patient_data: PatientData) -> Recommendation:
     """
     Generate clinical recommendations based on multiple rules.
     """
@@ -28,8 +29,8 @@ def generate_recommendation(db: Session, patient_data: PatientData) -> Recommend
     )
     
     db.add(db_recommendation)
-    db.commit()
-    db.refresh(db_recommendation)
+    await db.commit()
+    await db.refresh(db_recommendation)
     
     recommendation = Recommendation(
         id=db_recommendation.id,
@@ -46,6 +47,18 @@ def generate_recommendation(db: Session, patient_data: PatientData) -> Recommend
 
     return recommendation
 
-def get_recommendation_by_id(db: Session, recommendation_id: str) -> RecommendationModel:
-    """Retrieve a recommendation by ID."""
-    return db.query(RecommendationModel).filter(RecommendationModel.id == recommendation_id).first()
+async def get_recommendation_by_id(db: AsyncSession, recommendation_id: str) -> RecommendationModel:
+    """
+    Retrieve a recommendation by ID.
+
+    Args:
+        db (AsyncSession): The database session.
+        recommendation_id (str): The ID of the recommendation to retrieve.
+
+    Returns:
+        RecommendationModel or None: The recommendation if found, otherwise None.
+    """
+    result = await db.execute(
+        select(RecommendationModel).filter(RecommendationModel.id == recommendation_id)
+    )
+    return result.scalar_one_or_none()
