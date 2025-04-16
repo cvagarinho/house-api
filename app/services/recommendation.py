@@ -1,65 +1,72 @@
+from datetime import datetime
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.services.base import BaseService
 from app.schemas.recommendation import PatientData, Recommendation
 from app.models.recommendation import RecommendationModel
 from app.messaging.publisher import RecommendationPublisher
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
+from app.cache.redis_manager import redis_manager
 
-async def generate_recommendation(db: AsyncSession, patient_data: PatientData) -> Recommendation:
-    """
-    Generate clinical recommendations based on multiple rules.
-    """
-    recommendations = []
+class RecommendationService(BaseService):
+    def __init__(self, db: AsyncSession):
+        super().__init__(db)
+        self._publisher = RecommendationPublisher()
 
-    
-    if patient_data.age > 65 and patient_data.has_chronic_pain:
-        recommendations.append("Physical Therapy.")
-    
-    if patient_data.bmi and patient_data.bmi > 30:
-        recommendations.append("Weight Management Program.")
-    
-    if patient_data.recent_surgery:
-        recommendations.append("Post-Op Rehabilitation Plan.")
-    
-    if not recommendations:
-        recommendations.append("No specific recommendations at this time.")
-    
-    recommendation_text = " ".join(recommendations)
-    
-    db_recommendation = RecommendationModel(
-        recommendation_text=recommendation_text
-    )
-    
-    db.add(db_recommendation)
-    await db.commit()
-    await db.refresh(db_recommendation)
-    
-    recommendation = Recommendation(
-        id=db_recommendation.id,
-        timestamp=db_recommendation.timestamp,
-        recommendation_text=db_recommendation.recommendation_text
-    )
+    async def generate(self, patient_data: PatientData) -> Recommendation:
+        recommendations = self._apply_rules(patient_data)
+        db_recommendation = await self._save_recommendation(recommendations)
+        recommendation = Recommendation(
+            id=str(db_recommendation.id),
+            timestamp=db_recommendation.timestamp, 
+            recommendation_text=db_recommendation.recommendation_text
+        )
+        await self._publish_recommendation(recommendation)
+        return recommendation
 
-    try:
-        publisher = RecommendationPublisher()
-        publisher.publish_recommendation(recommendation)
-        publisher.close()
-    except Exception as e:
-        print(f"Failed to publish recommendation: {e}")
+    async def get_by_id(self, recommendation_id: str) -> Recommendation | None:
+        cached = await redis_manager.get(f"recommendation:{recommendation_id}")
+        if cached:
+            return Recommendation(**cached)
 
-    return recommendation
+        result = await self._db.get(RecommendationModel, recommendation_id)
+        if not result:
+            return None
 
-async def get_recommendation_by_id(db: AsyncSession, recommendation_id: str) -> RecommendationModel:
-    """
-    Retrieve a recommendation by ID.
+        recommendation = Recommendation(
+            id=str(result.id),
+            timestamp=result.timestamp.isoformat(),
+            recommendation_text=result.recommendation_text
+        )
+        
+        # Store in cache
+        await redis_manager.set(
+            f"recommendation:{recommendation_id}",
+            recommendation.model_dump()
+        )
+        
+        return recommendation
 
-    Args:
-        db (AsyncSession): The database session.
-        recommendation_id (str): The ID of the recommendation to retrieve.
+    def _apply_rules(self, patient_data: PatientData) -> list[str]:
+        recommendations = []
+        if patient_data.age > 65 and patient_data.has_chronic_pain:
+            recommendations.append("Physical Therapy")
+        if patient_data.bmi > 30:
+            recommendations.append("Weight Management Program")
+        if patient_data.recent_surgery:
+            recommendations.append("Post-Surgery Recovery Plan")
+        return recommendations
 
-    Returns:
-        RecommendationModel or None: The recommendation if found, otherwise None.
-    """
-    result = await db.execute(
-        select(RecommendationModel).filter(RecommendationModel.id == recommendation_id)
-    )
-    return result.scalar_one_or_none()
+    async def _save_recommendation(self, recommendations: list[str]) -> RecommendationModel:
+        db_recommendation = RecommendationModel(
+            timestamp=datetime.now(),
+            recommendation_text=", ".join(recommendations) 
+        )
+        self._db.add(db_recommendation)
+        await self._db.commit()
+        await self._db.refresh(db_recommendation)
+        return db_recommendation
+
+    async def _publish_recommendation(self, recommendation: Recommendation) -> None:
+        try:
+            await self._publisher.publish(recommendation.model_dump())
+        except Exception as e:
+            print(f"Failed to publish recommendation: {e}")

@@ -1,11 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.schemas.recommendation import Recommendation
-from app.cache.redis_manager import redis_manager
+from app.services.recommendation import RecommendationService
 from app.db.session import get_async_session
-from app.services.recommendation import get_recommendation_by_id
 from app.core.auth.jwt import get_current_user
-from app.schemas.user import User
 
 router = APIRouter()
 
@@ -53,7 +51,7 @@ router = APIRouter()
 )
 async def get_recommendation(
     recommendation_id: str,
-    current_user: User = Depends(get_current_user),
+    current_user = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_session)
 ) -> Recommendation:
     """
@@ -61,31 +59,20 @@ async def get_recommendation(
 
     Args:
         recommendation_id: Unique identifier of the recommendation
-        current_user: Authenticated user (injected by dependency)
+        current_user: The currently authenticated user (injected by dependency)
         db: Database session (injected by dependency)
 
     Returns:
         Recommendation: The requested recommendation
 
     Raises:
-        HTTPException: If recommendation not found (404) or not authenticated (401)
+        HTTPException: If recommendation not found (404)
     """
-    cache_key = f"recommendation:{recommendation_id}"
-    cached_data = await redis_manager.get(cache_key)
-    
-    if cached_data:
-        return cached_data
-    
-    recommendation = await get_recommendation_by_id(db, recommendation_id)
+    service = RecommendationService(db)
+    recommendation = await service.get_by_id(recommendation_id)
     if not recommendation:
-        raise HTTPException(status_code=404, detail="Recommendation not found")
-    
-    recommendation_data = Recommendation(
-        id=recommendation.id,
-        timestamp=recommendation.timestamp,
-        recommendation_text=recommendation.recommendation_text
-    )
-    
-    await redis_manager.set(cache_key, recommendation_data)
-    
-    return recommendation_data
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Recommendation not found"
+        )
+    return recommendation

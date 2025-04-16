@@ -7,7 +7,7 @@ from app.core.auth.password import verify_password
 from app.core.config import settings
 from app.db.session import get_async_session
 from app.schemas.user import Token, User, UserCreate
-from app.services.user import get_user_by_email, create_user
+from app.services.user import UserService
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -44,7 +44,8 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(get_async_session)
 ):
-    user = await get_user_by_email(db, form_data.username)
+    user_service = UserService(db)
+    user = await user_service.get_by_email(form_data.username)
     if not user or not verify_password(form_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -94,14 +95,13 @@ async def login(
     """
 )
 async def register(
-    user: UserCreate,
+    user_data: UserCreate,
     db: AsyncSession = Depends(get_async_session)
 ):
-    db_user = await get_user_by_email(db, user.email)
-    if db_user:
+    user_service = UserService(db)
+    if await user_service.get_by_email(user_data.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
-    
-    return await create_user(db, user)
+    return await user_service.create(user_data)
