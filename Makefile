@@ -39,11 +39,8 @@ rebuild-clean:
 rabbitmq-ui:
 	@echo "RabbitMQ UI available at http://localhost:15672"
 
-worker-logs:
-	docker logs house_worker -f
-
-worker-restart:
-	docker-compose restart worker
+service-logs:
+	docker logs $(service) -f
 
 format:
 	isort .
