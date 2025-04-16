@@ -19,7 +19,7 @@ class RecommendationService(BaseService):
         db_recommendation = await self._save_recommendation(recommendations)
         recommendation = Recommendation(
             id=str(db_recommendation.id),
-            timestamp=db_recommendation.timestamp.isoformat(),
+            timestamp=db_recommendation.timestamp.isoformat(),  # Convert to ISO format string
             recommendation_text=db_recommendation.recommendation_text,
         )
         await self._publish_recommendation(recommendation)
@@ -34,14 +34,16 @@ class RecommendationService(BaseService):
         if not result:
             return None
 
+        # Format timestamp consistently with ISO format
         recommendation = Recommendation(
             id=str(result.id),
-            timestamp=result.timestamp.isoformat(),
+            timestamp=result.timestamp.isoformat(),  # Convert to ISO format string
             recommendation_text=result.recommendation_text,
         )
 
         await redis_manager.set(
-            f"recommendation:{recommendation_id}", recommendation.model_dump()
+            f"recommendation:{recommendation_id}", 
+            recommendation.model_dump()
         )
 
         return recommendation

@@ -28,7 +28,7 @@ class RecommendationPublisher:
         message = {
             "recommendation_id": recommendation.id,
             "recommendation": recommendation.recommendation_text,
-            "timestamp": recommendation.timestamp.isoformat(),
+            "timestamp": recommendation.timestamp,
         }
         await self.channel.default_exchange.publish(
             aio_pika.Message(body=json.dumps(message).encode()),

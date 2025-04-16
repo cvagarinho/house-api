@@ -5,6 +5,7 @@ import pytest
 from fastapi import status
 
 from app.models.recommendation import RecommendationModel
+from app.schemas.recommendation import Recommendation
 
 
 @pytest.mark.asyncio
@@ -13,11 +14,12 @@ async def test_get_recommendation_success(
 ):
     """Test successful recommendation retrieval from database"""
     recommendation_id = str(uuid.uuid4())
+    test_timestamp = datetime.now()
 
     # Create recommendation in database
     new_rec = RecommendationModel(
         id=recommendation_id,
-        timestamp=datetime.now(),
+        timestamp=test_timestamp,
         recommendation_text="Physical Therapy",
     )
     db_session.add(new_rec)
@@ -34,6 +36,7 @@ async def test_get_recommendation_success(
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["id"] == recommendation_id
+    assert data["timestamp"] == test_timestamp.isoformat()
     assert data["recommendation_text"] == "Physical Therapy"
 
 
@@ -64,13 +67,20 @@ async def test_get_recommendation_unauthorized(async_client):
 async def test_get_recommendation_with_cache(async_client, auth_token, mock_redis):
     """Test recommendation retrieval from cache"""
     recommendation_id = str(uuid.uuid4())
+    test_timestamp = "2025-04-17T10:00:00"
+    
+    cached_recommendation = Recommendation(
+        id=recommendation_id,
+        timestamp=test_timestamp,
+        recommendation_text="Cached Recommendation"
+    )
+    
+    # Convert to dict and ensure timestamp is string
     cached_data = {
-        "id": recommendation_id,
-        "timestamp": "2025-04-17T10:00:00Z",
-        "recommendation_text": "Cached Recommendation",
+        **cached_recommendation.model_dump(),
+        "timestamp": cached_recommendation.timestamp.isoformat()
     }
-
-    # Set up cache hit
+    
     mock_redis["get"].return_value = cached_data
 
     headers = {"Authorization": f"Bearer {auth_token}"}
@@ -79,7 +89,10 @@ async def test_get_recommendation_with_cache(async_client, auth_token, mock_redi
     )
 
     assert response.status_code == status.HTTP_200_OK
-    assert response.json() == cached_data
+    response_data = response.json()
+    
+    # Compare the response with our expected data
+    assert response_data == cached_data
     mock_redis["get"].assert_called_once_with(f"recommendation:{recommendation_id}")
 
 
@@ -89,6 +102,7 @@ async def test_get_recommendation_cache_miss(
 ):
     """Test recommendation retrieval from database after cache miss"""
     recommendation_id = str(uuid.uuid4())
+    test_timestamp = datetime(2025, 4, 17, 10, 0)  # Use fixed timestamp for testing
 
     # Ensure cache miss
     mock_redis["get"].return_value = None
@@ -96,7 +110,7 @@ async def test_get_recommendation_cache_miss(
     # Create recommendation in DB
     new_rec = RecommendationModel(
         id=recommendation_id,
-        timestamp=datetime.now(),
+        timestamp=test_timestamp,
         recommendation_text="Physical Therapy",
     )
     db_session.add(new_rec)
@@ -110,6 +124,7 @@ async def test_get_recommendation_cache_miss(
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert data["id"] == recommendation_id
+    assert data["timestamp"] == test_timestamp.isoformat()  # Compare with ISO format string
     assert data["recommendation_text"] == "Physical Therapy"
 
     # Verify cache interactions
