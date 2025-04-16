@@ -4,10 +4,29 @@ from app.cache.redis_manager import redis_manager
 from app.db.init_db import initialize_database
 
 app = FastAPI(
-    title="HOUSE API",
-    description="API for generating and retrieving clinical recommendations",
+    title="House API",
+    description="""
+    Clinical Recommendations API with the following features:
+    - JWT Authentication
+    - Redis Caching
+    - RabbitMQ Message Queue
+    - PostgreSQL Database
+    """,
     version="1.0.0",
-    openapi_url="/house-api/openapi.json",
+    openapi_tags=[
+        {
+            "name": "auth",
+            "description": "Authentication operations. Register and login to obtain access token."
+        },
+        {
+            "name": "recommendations",
+            "description": "Operations with clinical recommendations. Protected by JWT authentication."
+        },
+        {
+            "name": "evaluate",
+            "description": "Patient evaluation endpoints. Generate recommendations based on patient data."
+        }
+    ]
 )
 
 app.include_router(api_router, prefix="/api")

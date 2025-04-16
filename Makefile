@@ -13,7 +13,7 @@ logs:
 	docker-compose logs -f
 
 test:
-	pytest tests
+	docker-compose exec api pytest -v tests/
 
 rebuild:
 	docker-compose --env-file .env.local up -d --build
@@ -24,10 +24,6 @@ status:
 check-api:
 	docker logs house_api -f
 
-restart-api:
-	docker-compose restart api
-
-# Generate requirements.txt from current environment
 requirements:
 	pip freeze > requirements.txt
 
