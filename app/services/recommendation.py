@@ -43,7 +43,7 @@ class RecommendationService(BaseService):
 
         await redis_manager.set(
             f"recommendation:{recommendation_id}", 
-            recommendation.model_dump()
+            recommendation
         )
 
         return recommendation
